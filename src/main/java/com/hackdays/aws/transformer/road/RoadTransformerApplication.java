@@ -1,4 +1,4 @@
-package com.hackdays.aws.transformer.road.roadtransformer;
+package com.hackdays.aws.transformer.road;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
