@@ -1,6 +1,7 @@
 package com.hackdays.aws.transformer.road.controllers;
 
 import com.hackdays.aws.transformer.road.dto.ImageDetailDTO;
+import com.hackdays.aws.transformer.road.exceptions.ImageNotSuitableException;
 import com.hackdays.aws.transformer.road.services.ImageProcessingService;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
@@ -38,6 +39,8 @@ public class RekonController {
         logger.info("Processing the file for road confidence...");
         try {
             return new ResponseEntity<>(imageProcessingService.processImage(multipartFile, imageDetailDTO), HttpStatus.OK);
+        } catch (ImageNotSuitableException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

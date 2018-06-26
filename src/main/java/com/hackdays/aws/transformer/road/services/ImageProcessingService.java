@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hackdays.aws.transformer.road.domains.StreetConfidence;
 import com.hackdays.aws.transformer.road.domains.StreetDetail;
 import com.hackdays.aws.transformer.road.dto.ImageDetailDTO;
+import com.hackdays.aws.transformer.road.exceptions.ImageNotSuitableException;
 import com.hackdays.aws.transformer.road.exceptions.NoLabelsException;
 import com.hackdays.aws.transformer.road.exceptions.S3BucketException;
 import com.hackdays.aws.transformer.road.repositories.StreetConfidenceRepository;
@@ -61,6 +62,7 @@ public class ImageProcessingService {
     private static final String ROAD = "road";
     private static final String BLANK = "";
     private static final Set<String> ADDRESS_KEYS = new HashSet<>(Arrays.asList("route", "neighborhood", "locality", "country"));
+    private static final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
 
     @Autowired
     public ImageProcessingService(StreetDetailRepository streetDetailRepository, StreetConfidenceRepository streetConfidenceRepository, AmazonRekognition amazonRekognition, AmazonS3 amazonS3, @Value("${aws.s3.bucketName}") String bucketName, @Value("${maps.reverse_geocoding_api}") String reverseGeocodingApi) {
@@ -74,7 +76,7 @@ public class ImageProcessingService {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    public Map<String, Object> processImage(MultipartFile multipartFile, ImageDetailDTO imageDetailDTO) throws Exception {
+    public Map<String, Object> processImage(MultipartFile multipartFile, ImageDetailDTO imageDetailDTO) throws NoLabelsException, S3BucketException, IOException, ImageNotSuitableException {
 
         logger.info("Detecting labels in the image...");
         DetectLabelsRequest detectLabelsRequest = new DetectLabelsRequest();
@@ -91,6 +93,9 @@ public class ImageProcessingService {
         }
         final Map<String, Float> labelConfidence = new HashMap<>();
         labels.forEach(label -> labelConfidence.put(label.getName().toLowerCase(), label.getConfidence()));
+        if (Collections.disjoint(labelConfidence.keySet(), ROAD_LABELS)) {
+            throw new ImageNotSuitableException("Image is not suitable for road confidence");
+        }
 
         if (!amazonS3.doesBucketExistV2(bucketName)) {
             logger.info("Bucket {} does not exists. Creating new bucket...", bucketName);
