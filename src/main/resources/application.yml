@@ -24,4 +24,7 @@ aws:
 maps:
   apiKey: AIzaSyAoDmpKV7ONNygXJ9XWiZPimb_oJOHYj9s
   reverse_geocoding_api: 'https://maps.googleapis.com/maps/api/geocode/json?key=${maps.apiKey}&latlng='
+email-notifications:
+  alert-confidence: 70 # if confidence is less than 70, send email
+  
 
