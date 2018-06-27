@@ -66,6 +66,10 @@ public class RoadService {
         return streetDetailRepository.findAll();
     }
 
+    public List<StreetConfidence> getStreetConfidence(Integer confidence) {
+        return streetConfidenceRepository.findByScoreLessThanEqual(Float.valueOf(confidence));
+    }
+
     public Map<String, Object> processImage(MultipartFile multipartFile, Integer locationId) throws NoLabelsException, S3BucketException, IOException, ImageNotSuitableException, RoadNotFoundException {
 
         Optional<StreetDetail> streetDetailById = streetDetailRepository.findById(locationId);
