@@ -45,7 +45,7 @@ public class RoadService {
     private AmazonS3 amazonS3;
 
     private String bucketName;
-    
+
     private NotificationService notificationService;
 
     private static final String ROAD = "road";
@@ -97,16 +97,16 @@ public class RoadService {
         if (Collections.disjoint(labelConfidence.keySet(), ROAD_LABELS)) {
             throw new ImageNotSuitableException("Image is not suitable for road confidence");
         }
-        
+
         float totalConfidence = 0;
         int count = 0;
-        for (Map.Entry<String, Float> confidenceMap: labelConfidence.entrySet()) {
-        	if (ROAD_LABELS.contains(confidenceMap.getKey())) {
-        		totalConfidence += confidenceMap.getValue();
-        		count += 1;
-        	}
+        for (Map.Entry<String, Float> confidenceMap : labelConfidence.entrySet()) {
+            if (ROAD_LABELS.contains(confidenceMap.getKey())) {
+                totalConfidence += confidenceMap.getValue();
+                count += 1;
+            }
         }
-        float avgConfidence = totalConfidence/count;
+        float avgConfidence = totalConfidence / count;
         notificationService.checkAndSendNotifications(streetDetail, avgConfidence);
 
         if (!amazonS3.doesBucketExistV2(bucketName)) {
@@ -136,8 +136,8 @@ public class RoadService {
         StreetConfidence streetConfidence = saveStreetConfidence(labelConfidence, s3FilePath, streetDetail);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("score", streetConfidence.getScore());
-
+        result.put("status", "Success");
+        result.put("message", "Successfully analyzed the image! Confidence for road is " + streetConfidence.getScore());
         return result;
     }
 
