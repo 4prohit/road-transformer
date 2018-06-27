@@ -52,11 +52,20 @@ public class RoadController {
         try {
             return new ResponseEntity<>(roadService.processImage(multipartFile, locationId), HttpStatus.OK);
         } catch (RoadNotFoundException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            Map<String, Object> result = new HashMap<>();
+            result.put("status", "Failed");
+            result.put("message", "Invalid location! No road found for given location.");
+            return new ResponseEntity<>(result, HttpStatus.OK);
         } catch (ImageNotSuitableException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            Map<String, Object> result = new HashMap<>();
+            result.put("status", "Failed");
+            result.put("message", "Image not is suitable! No labels detected for road or street!");
+            return new ResponseEntity<>(result, HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            Map<String, Object> result = new HashMap<>();
+            result.put("status", "Failed");
+            result.put("message", "Failed to analyze the image.");
+            return new ResponseEntity<>(result, HttpStatus.OK);
         }
     }
 
@@ -77,42 +86,42 @@ public class RoadController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     @PostMapping("/subscribe")
     public ResponseEntity<?> createSubscription(Subscription subscription) {
-    	try {
-    		Subscription savedSubscription = subscriptionRepository.save(subscription);
-    	} catch (Exception e) {
-    		return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-    	}
-    	
-    	String responseMsg = String.format("%s has successfully subscribed to %s", subscription.getEmail(), subscription.getLocationId());
-    	return new ResponseEntity<>(responseMsg, HttpStatus.CREATED);
-    }
-    
-    @GetMapping("/testSendEmail")
-    public ResponseEntity<?> sendEmail(@RequestParam(value="locationId", defaultValue="1") int locationId, 
-    		@RequestParam(value="roadName", defaultValue="Seletar Expressway") String roadName, 
-    		@RequestParam(value="country", defaultValue="Singapore") String country, 
-    		@RequestParam(value="roadConfidence", defaultValue="30.5") float roadConfidence,
-    		@RequestParam(value="streetConfidence", defaultValue="10.4") float streetConfidence){
-    	final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
-    	final Map<String, Float> labelConfidence = new HashMap<>();
-    	StreetDetail streetDetail = new StreetDetail();
-    	streetDetail.setLocationId(locationId);
-    	streetDetail.setCountry(country);
-    	streetDetail.setRoadName(roadName);
-    	labelConfidence.put("road", roadConfidence);
-    	labelConfidence.put("street", streetConfidence);
-    	float totalConfidence = 0;
-        int count = 0;
-        for (Map.Entry<String, Float> confidenceMap: labelConfidence.entrySet()) {
-        	if (ROAD_LABELS.contains(confidenceMap.getKey())) {
-        		totalConfidence += confidenceMap.getValue();
-        		count += 1;
-        	}
+        try {
+            Subscription savedSubscription = subscriptionRepository.save(subscription);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        float avgConfidence = totalConfidence/count;
+
+        String responseMsg = String.format("%s has successfully subscribed to %s", subscription.getEmail(), subscription.getLocationId());
+        return new ResponseEntity<>(responseMsg, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/testSendEmail")
+    public ResponseEntity<?> sendEmail(@RequestParam(value = "locationId", defaultValue = "1") int locationId,
+                                       @RequestParam(value = "roadName", defaultValue = "Seletar Expressway") String roadName,
+                                       @RequestParam(value = "country", defaultValue = "Singapore") String country,
+                                       @RequestParam(value = "roadConfidence", defaultValue = "30.5") float roadConfidence,
+                                       @RequestParam(value = "streetConfidence", defaultValue = "10.4") float streetConfidence) {
+        final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
+        final Map<String, Float> labelConfidence = new HashMap<>();
+        StreetDetail streetDetail = new StreetDetail();
+        streetDetail.setLocationId(locationId);
+        streetDetail.setCountry(country);
+        streetDetail.setRoadName(roadName);
+        labelConfidence.put("road", roadConfidence);
+        labelConfidence.put("street", streetConfidence);
+        float totalConfidence = 0;
+        int count = 0;
+        for (Map.Entry<String, Float> confidenceMap : labelConfidence.entrySet()) {
+            if (ROAD_LABELS.contains(confidenceMap.getKey())) {
+                totalConfidence += confidenceMap.getValue();
+                count += 1;
+            }
+        }
+        float avgConfidence = totalConfidence / count;
         notificationService.checkAndSendNotifications(streetDetail, avgConfidence);
         String responseString = String.format("Notification sent for %s. \nAverage confidence of %s", streetDetail.toString(), avgConfidence);
         return new ResponseEntity<>(responseString, HttpStatus.OK);

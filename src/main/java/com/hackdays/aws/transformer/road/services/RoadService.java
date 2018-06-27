@@ -45,7 +45,7 @@ public class RoadService {
     private AmazonS3 amazonS3;
 
     private String bucketName;
-    
+
     private NotificationService notificationService;
 
     private static final String ROAD = "road";
@@ -108,7 +108,7 @@ public class RoadService {
 //        }
 //        float avgConfidence = totalConfidence/count;
         notificationService.checkAndSendNotifications(streetDetail, labelConfidence.get(ROAD));
-
+      
         if (!amazonS3.doesBucketExistV2(bucketName)) {
             logger.info("Bucket {} does not exists. Creating new bucket...", bucketName);
             try {
@@ -136,8 +136,8 @@ public class RoadService {
         StreetConfidence streetConfidence = saveStreetConfidence(labelConfidence, s3FilePath, streetDetail);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("score", streetConfidence.getScore());
-
+        result.put("status", "Success");
+        result.put("message", "Successfully analyzed the image! Confidence for road is " + streetConfidence.getScore());
         return result;
     }
 
