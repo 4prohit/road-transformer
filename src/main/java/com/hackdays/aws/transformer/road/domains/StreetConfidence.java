@@ -14,7 +14,7 @@ public class StreetConfidence {
     private Integer confidenceId;
 
     @ManyToOne
-    @JoinColumn(name = "street_id")
+    @JoinColumn(name = "location_id")
     private StreetDetail streetDetail;
 
     private Float score;

@@ -2,8 +2,7 @@ package com.hackdays.aws.transformer.road.controllers;
 
 import com.hackdays.aws.transformer.road.exceptions.ImageNotSuitableException;
 import com.hackdays.aws.transformer.road.exceptions.RoadNotFoundException;
-import com.hackdays.aws.transformer.road.services.ImageProcessingService;
-import io.swagger.annotations.ApiOperation;
+import com.hackdays.aws.transformer.road.services.RoadService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,18 +15,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 //@Validated
 @RestController
-public class RekonController {
+public class RoadController {
 
-    private static final Logger logger = LoggerFactory.getLogger(RekonController.class);
+    private static final Logger logger = LoggerFactory.getLogger(RoadController.class);
 
-    private ImageProcessingService imageProcessingService;
+    private RoadService roadService;
 
     @Autowired
-    public RekonController(ImageProcessingService imageProcessingService) {
-        this.imageProcessingService = imageProcessingService;
+    public RoadController(RoadService roadService) {
+        this.roadService = roadService;
     }
 
-    @ApiOperation(value = "Uplo/**/ad Image", notes = "Upload image, analyze with AWS Rekognition and store in AWS S3")
     @PostMapping(value = "/v1/upload", consumes = {"multipart/form-data"}, produces = "application/json")
     public ResponseEntity<?> upload(@RequestParam("locationId") Integer locationId, @RequestParam("image") MultipartFile multipartFile) {
         if (multipartFile.isEmpty()) {
@@ -36,7 +34,7 @@ public class RekonController {
         logger.info("Received file with {} bytes", multipartFile.getSize());
         logger.info("Processing the file for road confidence...");
         try {
-            return new ResponseEntity<>(imageProcessingService.processImage(multipartFile, locationId), HttpStatus.OK);
+            return new ResponseEntity<>(roadService.processImage(multipartFile, locationId), HttpStatus.OK);
         } catch (RoadNotFoundException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (ImageNotSuitableException e) {

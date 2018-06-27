@@ -32,9 +32,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
-public class ImageProcessingService {
+public class RoadService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ImageProcessingService.class);
+    private static final Logger logger = LoggerFactory.getLogger(RoadService.class);
 
     private StreetDetailRepository streetDetailRepository;
 
@@ -51,7 +51,7 @@ public class ImageProcessingService {
     private static final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
 
     @Autowired
-    public ImageProcessingService(StreetDetailRepository streetDetailRepository, StreetConfidenceRepository streetConfidenceRepository, AmazonRekognition amazonRekognition, AmazonS3 amazonS3, @Value("${aws.s3.bucketName}") String bucketName) {
+    public RoadService(StreetDetailRepository streetDetailRepository, StreetConfidenceRepository streetConfidenceRepository, AmazonRekognition amazonRekognition, AmazonS3 amazonS3, @Value("${aws.s3.bucketName}") String bucketName) {
         this.streetDetailRepository = streetDetailRepository;
         this.streetConfidenceRepository = streetConfidenceRepository;
         this.amazonRekognition = amazonRekognition;
