@@ -53,4 +53,13 @@ public class RoadController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping(value = "/v1/streetConfidence", produces = "application/json")
+    public ResponseEntity<?> getStreetConfidence(@RequestParam(value = "confidence", required = false, defaultValue = "60") Integer confidence) {
+        try {
+            return new ResponseEntity<>(roadService.getStreetConfidence(confidence), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
