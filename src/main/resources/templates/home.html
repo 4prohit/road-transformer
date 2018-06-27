@@ -6,12 +6,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 
     <link rel="stylesheet" type="text/css" href="webjars/bootstrap/3.3.7/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="../../css/main.css"/>
+    <link rel="stylesheet" type="text/css" href="..//css/main.css"/>
 
     <script type="text/javascript" src="webjars/jquery/2.2.4/jquery.min.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
     <script type="text/javascript" src="webjars/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
     <script type="text/javascript"
             src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAoDmpKV7ONNygXJ9XWiZPimb_oJOHYj9s"></script>
 
@@ -34,15 +32,21 @@
 
         $(document).ready(function () {
             $("form#upload-form").submit(function (e) {
-                console.log("----------->")
                 e.preventDefault();
                 var formData = new FormData(this);
                 $.ajax({
-                    url: "/v1/upload",
                     type: 'POST',
+                    url: "/v1/upload",
                     data: formData,
+                    beforeSend: function () {
+                        $('#spinner').show();
+                    },
+                    complete: function () {
+                        $('#spinner').hide();
+                    },
                     success: function (data) {
-                        console.log(data);
+                        console.log("Upload Response -> ");
+                        //console.log(data);
                         alert("Successfully uploaded the image!")
                     },
                     cache: false,
@@ -50,29 +54,59 @@
                     processData: false
                 });
             });
+
+            $.ajax({
+                type: "GET",
+                url: "/v1/streetDetails",
+                dataType: "json",
+                beforeSend: function () {
+                    $('#spinner').show();
+                },
+                complete: function () {
+                    $('#spinner').hide();
+                },
+                success: function (data) {
+                    console.log("StreetDetails Response -> ");
+                    //console.log(data);
+                    $.each(data, function (i, streetDetailObj) {
+                        var dropDownOption = "<option value=" + streetDetailObj.locationId + ">" + streetDetailObj.roadName + "</option>";
+                        $(dropDownOption).appendTo('#locationSelect');
+                    });
+                    $('#locationSelect').val(data[0].locationId)
+                }
+            });
+
+            $('#spinner').bind('ajaxStart', function () {
+                $(this).show();
+            }).bind('ajaxStop', function () {
+                $(this).hide();
+            });
         })
     </script>
 </head>
 <body>
-<div class="container" style="width:60%;">
+<h1 class="container" style="text-align: center;">Road Transformer</h1>
+<div class="container" style="margin-top:40px;width:50%;">
     <form class="form-horizontal" id="upload-form" method="POST" enctype="multipart/form-data">
-        <div class="form-group form-group-lg">
+        <div class="form-group">
             <label class="col-sm-2 control-label">Image:</label>
             <div class="col-sm-10">
-                <input type="file" class="form-control" name="image"/>
+                <input type="file" class="form-control" name="image" required/>
             </div>
         </div>
-        <div class="form-group form-group-lg">
-            <label class="col-sm-2 control-label">Latitude:</label>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">Location:</label>
             <div class="col-sm-10">
-                <select name="locationId">
-                    <option value="1">Road 1</option>
+                <select class="form-control" id="locationSelect" name="locationId" required>
                 </select>
             </div>
-
-            <div class="form-group">
-                <div class="col-sm-offset-2 col-sm-10">
-                    <button id="bth-search" class="btn btn-primary btn-lg">Upload</button>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"></label>
+            <div class="col-sm-10">
+                <button class="btn btn-primary">Upload</button>
+                <div id="spinner" class="spinner" style="display:none;">
+                    <img id="img-spinner" src="../images/spinner.gif" alt="Loading"/>
                 </div>
             </div>
         </div>

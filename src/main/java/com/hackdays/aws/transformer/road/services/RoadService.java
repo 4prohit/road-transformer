@@ -59,6 +59,10 @@ public class RoadService {
         this.bucketName = bucketName;
     }
 
+    public List<StreetDetail> getStreetDetails() {
+        return streetDetailRepository.findAll();
+    }
+
     public Map<String, Object> processImage(MultipartFile multipartFile, Integer locationId) throws NoLabelsException, S3BucketException, IOException, ImageNotSuitableException, RoadNotFoundException {
 
         Optional<StreetDetail> streetDetailById = streetDetailRepository.findById(locationId);
