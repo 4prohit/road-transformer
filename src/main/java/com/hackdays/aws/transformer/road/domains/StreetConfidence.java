@@ -11,7 +11,7 @@ public class StreetConfidence {
 
     @Id
     @GeneratedValue
-    private Long confidenceId;
+    private Integer confidenceId;
 
     @ManyToOne
     @JoinColumn(name = "street_id")
@@ -25,12 +25,6 @@ public class StreetConfidence {
     private String s3FilePath;
 
     private String uploadedBy;
-
-    private String comments;
-
-    private String latitude;
-
-    private String longitude;
 
     private Long createdOn;
 }

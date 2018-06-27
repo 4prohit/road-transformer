@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 @Data
@@ -11,18 +12,19 @@ import javax.persistence.Id;
 public class StreetDetail {
 
     @Id
-    private String streetId;
+    @GeneratedValue
+    private Integer locationId;
 
-    @JsonProperty("route")
-    private String streetName;
+    private Integer roadId;
 
-    @JsonProperty("neighborhood")
-    private String neighborhood;
+    private String cctvId;
 
-    @JsonProperty("locality")
-    private String locality;
+    private String roadName;
 
-    @JsonProperty("country")
+    private String latitude;
+
+    private String longitude;
+
     private String country;
 
     private Long createdOn;
