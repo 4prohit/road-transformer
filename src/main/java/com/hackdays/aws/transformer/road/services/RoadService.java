@@ -45,18 +45,21 @@ public class RoadService {
     private AmazonS3 amazonS3;
 
     private String bucketName;
+    
+    private NotificationService notificationService;
 
     private static final String ROAD = "road";
     private static final String BLANK = "";
     private static final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
 
     @Autowired
-    public RoadService(StreetDetailRepository streetDetailRepository, StreetConfidenceRepository streetConfidenceRepository, AmazonRekognition amazonRekognition, AmazonS3 amazonS3, @Value("${aws.s3.bucketName}") String bucketName) {
+    public RoadService(StreetDetailRepository streetDetailRepository, StreetConfidenceRepository streetConfidenceRepository, AmazonRekognition amazonRekognition, AmazonS3 amazonS3, @Value("${aws.s3.bucketName}") String bucketName, NotificationService notificationService) {
         this.streetDetailRepository = streetDetailRepository;
         this.streetConfidenceRepository = streetConfidenceRepository;
         this.amazonRekognition = amazonRekognition;
         this.amazonS3 = amazonS3;
         this.bucketName = bucketName;
+        this.notificationService = notificationService;
     }
 
     public List<StreetDetail> getStreetDetails() {
@@ -90,6 +93,17 @@ public class RoadService {
         if (Collections.disjoint(labelConfidence.keySet(), ROAD_LABELS)) {
             throw new ImageNotSuitableException("Image is not suitable for road confidence");
         }
+        
+        float totalConfidence = 0;
+        int count = 0;
+        for (Map.Entry<String, Float> confidenceMap: labelConfidence.entrySet()) {
+        	if (ROAD_LABELS.contains(confidenceMap.getKey())) {
+        		totalConfidence += confidenceMap.getValue();
+        		count += 1;
+        	}
+        }
+        float avgConfidence = totalConfidence/count;
+        notificationService.checkAndSendNotifications(streetDetail, avgConfidence);
 
         if (!amazonS3.doesBucketExistV2(bucketName)) {
             logger.info("Bucket {} does not exists. Creating new bucket...", bucketName);

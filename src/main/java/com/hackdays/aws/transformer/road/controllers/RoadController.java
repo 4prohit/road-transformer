@@ -1,8 +1,17 @@
 package com.hackdays.aws.transformer.road.controllers;
 
+import com.hackdays.aws.transformer.road.domains.StreetDetail;
 import com.hackdays.aws.transformer.road.exceptions.ImageNotSuitableException;
 import com.hackdays.aws.transformer.road.exceptions.RoadNotFoundException;
+import com.hackdays.aws.transformer.road.services.NotificationService;
 import com.hackdays.aws.transformer.road.services.RoadService;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +30,12 @@ public class RoadController {
     private static final Logger logger = LoggerFactory.getLogger(RoadController.class);
 
     private RoadService roadService;
+    private NotificationService notificationService;
 
     @Autowired
-    public RoadController(RoadService roadService) {
+    public RoadController(RoadService roadService, NotificationService notificationService) {
         this.roadService = roadService;
+        this.notificationService = notificationService;
     }
 
     @PostMapping(value = "/v1/upload", consumes = {"multipart/form-data"}, produces = "application/json")
@@ -53,4 +64,33 @@ public class RoadController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    @GetMapping("/testSendEmail")
+    public ResponseEntity<?> sendEmail(@RequestParam(value="roadId", defaultValue="100") int roadId, 
+    		@RequestParam(value="roadName", defaultValue="Seletar Expressway") String roadName, 
+    		@RequestParam(value="country", defaultValue="Singapore") String country, 
+    		@RequestParam(value="roadConfidence", defaultValue="30.5") float roadConfidence,
+    		@RequestParam(value="streetConfidence", defaultValue="10.4") float streetConfidence){
+    	final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
+    	final Map<String, Float> labelConfidence = new HashMap<>();
+    	StreetDetail streetDetail = new StreetDetail();
+    	streetDetail.setRoadId(roadId);
+    	streetDetail.setCountry(country);
+    	streetDetail.setRoadName(roadName);
+    	labelConfidence.put("road", roadConfidence);
+    	labelConfidence.put("street", streetConfidence);
+    	float totalConfidence = 0;
+        int count = 0;
+        for (Map.Entry<String, Float> confidenceMap: labelConfidence.entrySet()) {
+        	if (ROAD_LABELS.contains(confidenceMap.getKey())) {
+        		totalConfidence += confidenceMap.getValue();
+        		count += 1;
+        	}
+        }
+        float avgConfidence = totalConfidence/count;
+        notificationService.checkAndSendNotifications(streetDetail, avgConfidence);
+        String responseString = String.format("Notification sent for %s. \nAverage confidence of %s", streetDetail.toString(), avgConfidence);
+        return new ResponseEntity<>(responseString, HttpStatus.OK);
+    }
+    
 }
