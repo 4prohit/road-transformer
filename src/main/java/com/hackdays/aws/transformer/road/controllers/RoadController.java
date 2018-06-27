@@ -1,8 +1,10 @@
 package com.hackdays.aws.transformer.road.controllers;
 
 import com.hackdays.aws.transformer.road.domains.StreetDetail;
+import com.hackdays.aws.transformer.road.domains.Subscription;
 import com.hackdays.aws.transformer.road.exceptions.ImageNotSuitableException;
 import com.hackdays.aws.transformer.road.exceptions.RoadNotFoundException;
+import com.hackdays.aws.transformer.road.repositories.SubscriptionRepository;
 import com.hackdays.aws.transformer.road.services.NotificationService;
 import com.hackdays.aws.transformer.road.services.RoadService;
 
@@ -31,11 +33,13 @@ public class RoadController {
 
     private RoadService roadService;
     private NotificationService notificationService;
+    private SubscriptionRepository subscriptionRepository;
 
     @Autowired
-    public RoadController(RoadService roadService, NotificationService notificationService) {
+    public RoadController(RoadService roadService, NotificationService notificationService, SubscriptionRepository subscriptionRepository) {
         this.roadService = roadService;
         this.notificationService = notificationService;
+        this.subscriptionRepository = subscriptionRepository;
     }
 
     @PostMapping(value = "/v1/upload", consumes = {"multipart/form-data"}, produces = "application/json")
@@ -64,9 +68,30 @@ public class RoadController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping(value = "/v1/streetConfidence", produces = "application/json")
+    public ResponseEntity<?> getStreetConfidence(@RequestParam(value = "confidence", required = false, defaultValue = "60") Integer confidence) {
+        try {
+            return new ResponseEntity<>(roadService.getStreetConfidence(confidence), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @PostMapping("/subscribe")
+    public ResponseEntity<?> createSubscription(Subscription subscription) {
+    	try {
+    		Subscription savedSubscription = subscriptionRepository.save(subscription);
+    	} catch (Exception e) {
+    		return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    	}
+    	
+    	String responseMsg = String.format("%s has successfully subscribed to %s", subscription.getEmail(), subscription.getLocationId());
+    	return new ResponseEntity<>(responseMsg, HttpStatus.CREATED);
+    }
     
     @GetMapping("/testSendEmail")
-    public ResponseEntity<?> sendEmail(@RequestParam(value="roadId", defaultValue="100") int roadId, 
+    public ResponseEntity<?> sendEmail(@RequestParam(value="locationId", defaultValue="1") int locationId, 
     		@RequestParam(value="roadName", defaultValue="Seletar Expressway") String roadName, 
     		@RequestParam(value="country", defaultValue="Singapore") String country, 
     		@RequestParam(value="roadConfidence", defaultValue="30.5") float roadConfidence,
@@ -74,7 +99,7 @@ public class RoadController {
     	final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
     	final Map<String, Float> labelConfidence = new HashMap<>();
     	StreetDetail streetDetail = new StreetDetail();
-    	streetDetail.setRoadId(roadId);
+    	streetDetail.setLocationId(locationId);
     	streetDetail.setCountry(country);
     	streetDetail.setRoadName(roadName);
     	labelConfidence.put("road", roadConfidence);
@@ -91,14 +116,5 @@ public class RoadController {
         notificationService.checkAndSendNotifications(streetDetail, avgConfidence);
         String responseString = String.format("Notification sent for %s. \nAverage confidence of %s", streetDetail.toString(), avgConfidence);
         return new ResponseEntity<>(responseString, HttpStatus.OK);
-    }
-
-    @GetMapping(value = "/v1/streetConfidence", produces = "application/json")
-    public ResponseEntity<?> getStreetConfidence(@RequestParam(value = "confidence", required = false, defaultValue = "60") Integer confidence) {
-        try {
-            return new ResponseEntity<>(roadService.getStreetConfidence(confidence), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 }
