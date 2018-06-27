@@ -5,9 +5,6 @@ var greenRoadImage = "https://s3-us-west-2.amazonaws.com/hackdaysample/green_roa
 var yellowRoadImage = "https://s3-us-west-2.amazonaws.com/hackdaysample/yellow_road.png";
 var redRoadImage = "https://s3-us-west-2.amazonaws.com/hackdaysample/red_road.png";
 
-var currentConfidence = 70;
-var uploadOveride = false;
-
 function InitializeMap() {
     var latlng = new google.maps.LatLng(1.352083, 103.819836);
     var myOptions =
@@ -110,8 +107,7 @@ $(document).ready(function () {
                 console.log(data);
                 $('#spinner').hide();
                 alert("Status: " + data.status + ", Message: " + data.message)
-                uploadOveride = true;
-                getStreetConfidence(currentConfidence);
+                getStreetConfidence(70);
             },
             error: function (xhr, textStatus, error) {
                 console.log(xhr.statusText);
@@ -145,15 +141,11 @@ $(document).ready(function () {
         }
     });
 
-    getStreetConfidence(currentConfidence);
-    $('#confidenceSelect').val(currentConfidence)
+    getStreetConfidence(70);
+    $('#confidenceSelect').val(70)
 
     $("#confidenceSelect").change(function () {
-        if (currentConfidence != $("#confidenceSelect").val() && uploadOveride == true) {
-            getStreetConfidence($("#confidenceSelect").val());
-            currentConfidence = $("#confidenceSelect").val();
-            uploadOveride = false;
-        }
+        getStreetConfidence($("#confidenceSelect").val());
     });
 
     $('#spinner').bind('ajaxStart', function () {

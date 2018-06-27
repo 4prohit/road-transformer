@@ -98,17 +98,8 @@ public class RoadService {
             throw new ImageNotSuitableException("Image is not suitable for road confidence");
         }
         
-//        float totalConfidence = 0;
-//        int count = 0;
-//        for (Map.Entry<String, Float> confidenceMap: labelConfidence.entrySet()) {
-//        	if (ROAD_LABELS.contains(confidenceMap.getKey())) {
-//        		totalConfidence += confidenceMap.getValue();
-//        		count += 1;
-//        	}
-//        }
-//        float avgConfidence = totalConfidence/count;
         notificationService.checkAndSendNotifications(streetDetail, labelConfidence.get(ROAD));
-      
+
         if (!amazonS3.doesBucketExistV2(bucketName)) {
             logger.info("Bucket {} does not exists. Creating new bucket...", bucketName);
             try {
