@@ -10,9 +10,4 @@ public class HomeController {
     public String home() {
         return "home";
     }
-    
-    @GetMapping("/subscribe")
-    public String showSubscribePage() {
-       return "subscribe";
-    }
 }

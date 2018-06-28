@@ -2,9 +2,9 @@ spring:
   application:
     name: road-transformer
   datasource:
-    url: jdbc:mysql://roadtransformer.cvk0oth4xubz.us-east-1.rds.amazonaws.com:3306/roadtransformer?useSSL=false
-    username: adminuser
-    password: admin123
+    url: ${JDBC_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.jdbc.Driver
   jpa:
     hibernate:
@@ -21,10 +21,13 @@ aws:
   secretKey: ${SECRET_KEY}
   s3:
     bucketName: roadtransformer
-maps:
-  apiKey: AIzaSyAoDmpKV7ONNygXJ9XWiZPimb_oJOHYj9s
-  reverse_geocoding_api: 'https://maps.googleapis.com/maps/api/geocode/json?key=${maps.apiKey}&latlng='
-email-notifications:
-  alert-confidence: 70 # if confidence is less than 70, send email
+notifications:
+  confidenceLevel: 70 # if confidence is less than 70, send email
+  email:
+    from: 4prohit@gmail.com
+    recipients: 4prohit@gmail.com
+    subject: 'RoadTransformers - %s: Bad Road Conditions (%.1f%%)'
+    body: 'Bad Road Conditions'
+
   
 

@@ -44,22 +44,42 @@ public class RoadService {
 
     private AmazonS3 amazonS3;
 
+    private EmailService emailService;
+
     private String bucketName;
 
-    private NotificationService notificationService;
+    private float confidenceLevel;
+
+    private List<String> recipients;
+
+    private String from;
+
+    private String subjectTemplate;
 
     private static final String ROAD = "road";
     private static final String BLANK = "";
     private static final Set<String> ROAD_LABELS = new HashSet<>(Arrays.asList("road", "street"));
+    // The HTML body for the email.
+    private static final String BODY_TEMPLATE_HTML = "<h1>%s</h1>"
+            + "<p>%s</p>"
+            + "<p>This email was sent with <a href='https://aws.amazon.com/ses/'>"
+            + "Amazon SES</a> using the <a href='https://aws.amazon.com/sdk-for-java/'>"
+            + "AWS SDK for Java</a></p>";
+    // The email body for recipients with non-HTML email clients.
+    private static final String BODY_TEMPLATE_TEXT = "%s \n%s";
 
     @Autowired
-    public RoadService(StreetDetailRepository streetDetailRepository, StreetConfidenceRepository streetConfidenceRepository, AmazonRekognition amazonRekognition, AmazonS3 amazonS3, @Value("${aws.s3.bucketName}") String bucketName, NotificationService notificationService) {
+    public RoadService(StreetDetailRepository streetDetailRepository, StreetConfidenceRepository streetConfidenceRepository, AmazonRekognition amazonRekognition, AmazonS3 amazonS3, EmailService emailService, @Value("${aws.s3.bucketName}") String bucketName, @Value("${notifications.confidenceLevel}") float confidenceLevel, @Value("${notifications.email.recipients}") List<String> recipients, @Value("${notifications.email.from}") String from, @Value("${notifications.email.subject}") String subjectTemplate) {
         this.streetDetailRepository = streetDetailRepository;
         this.streetConfidenceRepository = streetConfidenceRepository;
         this.amazonRekognition = amazonRekognition;
         this.amazonS3 = amazonS3;
+        this.emailService = emailService;
         this.bucketName = bucketName;
-        this.notificationService = notificationService;
+        this.confidenceLevel = confidenceLevel;
+        this.recipients = recipients;
+        this.from = from;
+        this.subjectTemplate = subjectTemplate;
     }
 
     public List<StreetDetail> getStreetDetails() {
@@ -97,8 +117,8 @@ public class RoadService {
         if (Collections.disjoint(labelConfidence.keySet(), ROAD_LABELS)) {
             throw new ImageNotSuitableException("Image is not suitable for road confidence");
         }
-        
-        notificationService.checkAndSendNotifications(streetDetail, labelConfidence.get(ROAD));
+
+        checkAndSendNotifications(streetDetail, labelConfidence.get(ROAD));
 
         if (!amazonS3.doesBucketExistV2(bucketName)) {
             logger.info("Bucket {} does not exists. Creating new bucket...", bucketName);
@@ -128,7 +148,8 @@ public class RoadService {
 
         Map<String, Object> result = new HashMap<>();
         result.put("status", "Success");
-        result.put("message", "Successfully analyzed the image! Confidence for road is " + streetConfidence.getScore());
+        result.put("confidence", streetConfidence.getScore());
+        result.put("message", "Successfully analyzed the image!");
         return result;
     }
 
@@ -143,6 +164,26 @@ public class RoadService {
         streetConfidence.setCreatedOn(System.currentTimeMillis());
         streetConfidence = streetConfidenceRepository.save(streetConfidence);
         return streetConfidence;
+    }
+
+    private void checkAndSendNotifications(StreetDetail streetDetail, float confidence) {
+        if (confidence <= confidenceLevel) {
+            logger.info(String.format("Confidence level of %s is bad, preparing to send emails...", confidence));
+            for (String recipient : recipients) {
+                sendBadRoadEmail(recipient, streetDetail, confidence);
+            }
+        } else {
+            logger.info(String.format("Confidence level of %s is good!", confidence));
+        }
+    }
+
+    private void sendBadRoadEmail(String toEmail, StreetDetail streetDetail, Float confidence) {
+        String subject = String.format(subjectTemplate, streetDetail.getRoadName(), confidence);
+        String header = String.format("%s: Bad Road Conditions (%.1f%%)", streetDetail.getRoadName(), confidence);
+        String body = String.format("The road condition at %s, %s is bad (%.1f%%), please take another route.", streetDetail.getRoadName(), streetDetail.getCountry(), confidence);
+        String htmlBody = String.format(BODY_TEMPLATE_HTML, header, body);
+        String textBody = String.format(BODY_TEMPLATE_TEXT, header, body);
+        emailService.sendEmail(from, toEmail, subject, htmlBody, textBody);
     }
 
     private Image getImageUtil(MultipartFile uploadedImage) throws IOException {

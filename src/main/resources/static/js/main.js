@@ -1,5 +1,6 @@
 var googleMap;
 var markers = [];
+var defaultConfidence = 100;
 
 var greenRoadImage = "https://s3-us-west-2.amazonaws.com/hackdaysample/green_road.png";
 var yellowRoadImage = "https://s3-us-west-2.amazonaws.com/hackdaysample/yellow_road.png";
@@ -106,8 +107,13 @@ $(document).ready(function () {
                 console.log("Upload Response -> ");
                 console.log(data);
                 $('#spinner').hide();
-                alert("Status: " + data.status + ", Message: " + data.message)
-                getStreetConfidence(70);
+                alert("Status: " + data.status + ", Message: " + data.message + "Confidence: " + data.confidence);
+                var roundedConfidenceValue = Math.ceil(data.confidence / 10) * 10;
+                if (roundedConfidenceValue < 50) {
+                    roundedConfidenceValue = 50;
+                }
+                $('#confidenceSelect').val(roundedConfidenceValue)
+                getStreetConfidence(roundedConfidenceValue);
             },
             error: function (xhr, textStatus, error) {
                 console.log(xhr.statusText);
@@ -141,8 +147,9 @@ $(document).ready(function () {
         }
     });
 
-    getStreetConfidence(70);
-    $('#confidenceSelect').val(70)
+    getStreetConfidence(defaultConfidence);
+
+    $('#confidenceSelect').val(defaultConfidence)
 
     $("#confidenceSelect").change(function () {
         getStreetConfidence($("#confidenceSelect").val());
